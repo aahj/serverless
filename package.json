@@ -1,0 +1,6 @@
+{
+  "devDependencies": {
+    "serverless-add-api-key": "^4.2.1",
+    "serverless-webpack": "^5.13.0"
+  }
+}

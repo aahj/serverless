@@ -1,0 +1,124 @@
+service: serverless-lambda
+frameworkVersion: "3"
+
+provider:
+  name: aws
+  runtime: nodejs18.x
+  profile: serverlessUser
+  stage: dev
+  region: us-east-1
+  environment:
+    tableName: ${self:custom.tableName}
+  iamRoleStatements:
+    - Effect: Allow
+      Action:
+        - dynamodb:*
+        - ses:*
+      Resource: "*"
+
+plugins:
+  - serverless-webpack
+  - serverless-add-api-key
+
+package:
+  individually: true
+
+custom:
+  tableName: playerpoints
+  apiKeys:
+    - name: free
+      usagePlan:
+        name: freeUsagePlan
+        quota:
+          limit: 3
+          period: DAY
+        throttle:
+          rateLimit: 5
+          burstLimit: 10
+
+    - name: paid
+      usagePlan:
+        name: paidUsagePlan
+        quota:
+          limit: 15
+          period: MONTH
+        throttle:
+          rateLimit: 20
+          burstLimit: 25
+
+functions:
+  # getUser:
+  #   handler: lambdas/handlers/getUser.getUser
+  #   events:
+  #     - http:
+  #         path: user/{ID}
+  #         method: GET
+  #         cors: true
+
+  getPlayerScore:
+    handler: lambdas/handlers/getPlayerScore.handler
+    events:
+      - http:
+          path: player-score/{ID}
+          method: GET
+          cors: true
+          private: true
+
+  createPlayerScore:
+    handler: lambdas/handlers/createPlayerScore.handler
+    events:
+      - http:
+          path: player-score/{ID}
+          method: POST
+          cors: true
+          private: true
+
+  getGameScores:
+    handler: lambdas/handlers/getGameScores.handler
+    events:
+      - http:
+          path: game-scores/{game}
+          method: GET
+          cors: true
+
+  proxy:
+    handler: lambdas/handlers/proxy.handler
+    events:
+      - http:
+          path: flourish/{proxy+}
+          method: ANY
+          integration: http-proxy
+          request:
+            uri: https://api.chucknorris.io/{proxy}
+            parameters:
+              paths:
+                proxy: true
+
+  # sendReminder:
+  #   handler: lambdas/handlers/scheduleTasks/reminderEmail.handler
+  #   events:
+  #     - schedule: cron(0 9 ? * 7 *) #- this will run at 9 o'clock on 7th day of week (saturday), every month, every year regardless of day;
+
+resources:
+  Resources:
+    MyDynamoDbTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:custom.tableName}
+        AttributeDefinitions:
+          - AttributeName: ID
+            AttributeType: S
+          - AttributeName: game
+            AttributeType: S
+        KeySchema:
+          - AttributeName: ID
+            KeyType: HASH
+        BillingMode: PAY_PER_REQUEST
+        
+        GlobalSecodaryIndexes:
+          - IndexName: game-index
+            KeySchema:
+              - AttributeName: game
+                KeyType: HASH
+            Projection:
+              ProjectionType: ALL
