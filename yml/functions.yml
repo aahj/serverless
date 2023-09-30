@@ -1,0 +1,51 @@
+# getUser:
+#   handler: lambdas/handlers/getUser.getUser
+#   events:
+#     - http:
+#         path: user/{ID}
+#         method: GET
+#         cors: true
+
+getPlayerScore:
+  handler: lambdas/handlers/getPlayerScore.handler
+  events:
+    - http:
+        path: player-score/{ID}
+        method: GET
+        cors: true
+        private: true
+
+createPlayerScore:
+  handler: lambdas/handlers/createPlayerScore.handler
+  events:
+    - http:
+        path: player-score/{ID}
+        method: POST
+        cors: true
+        private: true
+
+getGameScores:
+  handler: lambdas/handlers/getGameScores.handler
+  events:
+    - http:
+        path: game-scores/{game}
+        method: GET
+        cors: true
+
+proxy:
+  handler: lambdas/handlers/proxy.handler
+  events:
+    - http:
+        path: flourish/{proxy+}
+        method: ANY
+        integration: http-proxy
+        request:
+          uri: https://api.chucknorris.io/{proxy}
+          parameters:
+            paths:
+              proxy: true
+
+# sendReminder:
+#   handler: lambdas/handlers/scheduleTasks/reminderEmail.handler
+#   events:
+#     - schedule: cron(0 9 ? * 7 *) #- this will run at 9 o'clock on 7th day of week (saturday), every month, every year regardless of day;
